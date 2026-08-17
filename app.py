@@ -1,4 +1,4 @@
-import ollama
+# import ollama
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -353,39 +353,46 @@ def local_answer(question, df):
 
 
 def ask_ai(question, df):
-    """Natural-language AI analysis using local Ollama."""
+    """AI-powered business data analysis using Google Gemini."""
 
     try:
+        from google import genai
+
         rows = len(df)
         columns = list(df.columns)
 
         data_preview = df.head(50).to_string(index=False)
 
-        numeric_summary = ""
         numeric_cols = df.select_dtypes(include="number").columns
 
         if len(numeric_cols) > 0:
-            numeric_summary = df[numeric_cols].describe().round(2).to_string()
+            numeric_summary = (
+                df[numeric_cols]
+                .describe()
+                .round(2)
+                .to_string()
+            )
+        else:
+            numeric_summary = "No numerical columns available."
 
-        system_prompt = """
+        prompt = f"""
 You are InsightForgeAI, a professional business data analysis assistant.
 
-Answer questions about the uploaded business dataset.
+Answer the user's question using ONLY the uploaded dataset information.
 
-Rules:
+RULES:
 - Understand natural-language questions.
 - Use only the dataset information provided.
 - Do not invent numbers.
 - Calculate results from the dataset when possible.
-- If the dataset does not contain the required information, say so.
+- If the dataset does not contain the required information, clearly say so.
 - Give clear and professional answers.
 - Provide useful business insights when appropriate.
-"""
 
-        user_prompt = f"""
 DATASET INFORMATION
 
-Rows: {rows}
+Rows:
+{rows}
 
 Columns:
 {columns}
@@ -402,24 +409,22 @@ USER QUESTION:
 Answer the user's question using the dataset above.
 """
 
-        response = ollama.chat(
-            model="gemma3:latest",
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
-            ]
+        api_key = st.secrets.get("GEMINI_API_KEY")
+
+        if not api_key:
+            return "Gemini API key is not configured."
+
+        client = genai.Client(api_key=api_key)
+
+        response = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=prompt
         )
 
-        return response["message"]["content"]
+        return response.text
 
     except Exception as e:
-        return f"AI analysis error: {str(e)}"
+        return f"Gemini AI error: {str(e)}"
 
 
 def generate_insights(df):
