@@ -249,10 +249,13 @@ def load_dataset(uploaded_file):
     if name.endswith(".csv"):
         return pd.read_csv(uploaded_file)
 
+    if name.endswith(".pdf"):
+        return pd.read_pdf(uploaded_file)
+
     if name.endswith(".xlsx"):
         return pd.read_excel(uploaded_file)
 
-    raise ValueError("Unsupported file type. Please upload CSV or XLSX.")
+    raise ValueError("Unsupported file type. Please upload CSV or PDF or XLSX.")
 
 
 def clean_dataframe(df):
